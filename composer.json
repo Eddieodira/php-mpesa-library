@@ -1,0 +1,21 @@
+{
+    "name": "eddieodira/mpesa",
+    "description": "This is Mpesa Payment Library for Kenya",
+    "type": "library",
+    "require": {
+        "php": "^7.3|^8.1"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Eddieodira\\Mpesa\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Eddy Odingo Odira",
+            "email": "76993534+Eddieodira@users.noreply.github.com"
+        }
+    ],
+    "minimum-stability": "stable"
+}
