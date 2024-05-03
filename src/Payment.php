@@ -13,8 +13,9 @@ class Payment
     protected $url;
     protected $tokenUrl;
     protected $token;
-    protected $curlData = [];
+    protected $param = [];
     protected $data;
+    protected $response;
     protected $configuration;
 
     public function __construct($mpesaConfig) {
@@ -22,6 +23,10 @@ class Payment
         $this->consumerKey = $this->configuration->consumerKey;
         $this->consumerSecret = $this->configuration->consumerSecret;
         $this->appStatus = $this->configuration->appStatus;
+    }
+
+    public function getResponse() {
+        return $this->response;
     }
 
     public function generateToken(){
@@ -58,31 +63,12 @@ class Payment
             throw new MpesaException("Invalid application status");
         }
 
-        $this->token = self::generateToken();
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, $this->url);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type:application/json','Authorization:Bearer ' . $this->token));
-
-        $this->curlData[Constants::C2B['SHORTCODE']] = $shortCode;
-        $this->curlData[Constants::C2B['COMMAND_ID']] = $commandID;
-        $this->curlData[Constants::C2B['AMOUNT']] = $amount;
-        $this->curlData[Constants::C2B['MSISDN']] = $msisdn;
-        $this->curlData[Constants::C2B['BILL_REF_NUMBER']] = $billRefNumber;
-        $this->data = json_encode($this->curlPostData);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_POST, true);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $this->data);
-        curl_setopt($curl, CURLOPT_HEADER, false);
-        $curl_response = curl_exec($curl);
-        $getHTTPCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($curl);
-        curl_close($curl);
-        if ($curl_response === false) {
-            throw new MpesaException('Unable to connect to Safaricom Mpesa API: ' . $curlError);
-        } elseif ($getHTTPCode != 200) {
-            throw new MpesaException('Bad response from Safaricom Daraja Mpesa API: HTTP code ' . $getHTTPCode);
-        }
-        return $curl_response;
+        $this->param[Constants::C2B['SHORTCODE']] = $shortCode;
+        $this->param[Constants::C2B['COMMAND_ID']] = $commandID;
+        $this->param[Constants::C2B['AMOUNT']] = $amount;
+        $this->param[Constants::C2B['MSISDN']] = $msisdn;
+        $this->param[Constants::C2B['BILL_REF_NUMBER']] = $billRefNumber;
+        return $this->response = $this->curlRequest($this->url, $this->param, $this->token);
     }
 
     public function stkPush($businessShortCode, $lipaNaMpesaPasskey, $transactionType, $amount, $partyA, $partyB, $phoneNumber, $callBackURL, $accountReference, $transactionDesc){
@@ -99,39 +85,18 @@ class Payment
 
         $timestamp = '20' . date("ymdhis");
         $password = base64_encode($businessShortCode.$lipaNaMpesaPasskey.$timestamp);
-
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, $this->url);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type:application/json','Authorization:Bearer ' . $this->token));
-
-        $this->curlData[Constants::STK['SHORTCODE']] = $businessShortCode;
-        $this->curlData[Constants::STK['PASSWORD']] = $password;
-        $this->curlData[Constants::STK['TIMESTAMP']] = $timestamp;
-        $this->curlData[Constants::STK['TRANS_TYPE']] = $transactionType;
-        $this->curlData[Constants::STK['AMOUNT']] = $amount;
-        $this->curlData[Constants::STK['PARTY_A']] = $partyA;
-        $this->curlData[Constants::STK['PARTY_B']] = $partyB;
-        $this->curlData[Constants::STK['PHONE_NUMBER']] = $phoneNumber;
-        $this->curlData[Constants::STK['CALLBACK_URL']] = $callBackURL;
-        $this->curlData[Constants::STK['ACCOUNT_REF']] = $accountReference;
-        $this->curlData[Constants::STK['TRANS_DESC']] = $transactionType;
-
-        $this->data = json_encode($this->curlData);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_POST, true);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $this->data);
-        curl_setopt($curl, CURLOPT_HEADER, false);
-        $curl_response = curl_exec($curl);
-
-        $getHTTPCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($curl);
-        curl_close($curl);
-        if ($curl_response === false) {
-            throw new MpesaException('Unable to connect to Safaricom Mpesa API: ' . $curlError);
-        } elseif ($getHTTPCode != 200) {
-            throw new MpesaException('Bad response from Safaricom Daraja Mpesa API: HTTP code ' . $getHTTPCode);
-        }
-        return $curl_response;
+        $this->param[Constants::STK['SHORTCODE']] = $businessShortCode;
+        $this->param[Constants::STK['PASSWORD']] = $password;
+        $this->param[Constants::STK['TIMESTAMP']] = $timestamp;
+        $this->param[Constants::STK['TRANS_TYPE']] = $transactionType;
+        $this->param[Constants::STK['AMOUNT']] = $amount;
+        $this->param[Constants::STK['PARTY_A']] = $partyA;
+        $this->param[Constants::STK['PARTY_B']] = $partyB;
+        $this->param[Constants::STK['PHONE_NUMBER']] = $phoneNumber;
+        $this->param[Constants::STK['CALLBACK_URL']] = $callBackURL;
+        $this->param[Constants::STK['ACCOUNT_REF']] = $accountReference;
+        $this->param[Constants::STK['TRANS_DESC']] = $transactionType;
+        return $this->response = $this->curlRequest($this->url, $this->param, $this->token);
     }
 
     public function transactionStatus($initiator, $securityCredential, $commandID, $transactionID, $partyA, $identifierType, $resultURL, $queueTimeOutURL, $remarks, $occasion){
@@ -146,76 +111,73 @@ class Payment
 
         $this->token = self::generateToken();
 
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, $this->url);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type:application/json','Authorization:Bearer ' . $this->token));
-
-        $this->curlData[Constants::QUERY['INITIATOR']] = $initiator;
-        $this->curlData[Constants::QUERY['SEC_CRED']] = $securityCredential;
-        $this->curlData[Constants::QUERY['COMMAND_ID']] = $commandID;
-        $this->curlData[Constants::QUERY['TRANS_ID']] = $transactionID;
-        $this->curlData[Constants::QUERY['PARTY_A']] = $partyA;
-        $this->curlData[Constants::QUERY['ID_TYPE']] = $identifierType;
-        $this->curlData[Constants::QUERY['RESULT_URL']] = $resultURL;
-        $this->curlData[Constants::QUERY['TIME_OUT_URL']] = $queueTimeOutURL;
-        $this->curlData[Constants::QUERY['REMARKS']] = $remarks;
-        $this->curlData[Constants::QUERY['OCCASION']] = $occasion;
-
-        $this->data = json_encode($this->curlData);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_POST, true);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $this->data);
-        curl_setopt($curl, CURLOPT_HEADER, false);
-        $curl_response = curl_exec($curl);
-        $getHTTPCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($curl);
-        curl_close($curl);
-        if ($curl_response === false) {
-            throw new MpesaException('Unable to connect to Safaricom Mpesa API: ' . $curlError);
-        } elseif ($getHTTPCode != 200) {
-            throw new MpesaException('Bad response from Safaricom Daraja Mpesa API: HTTP code ' . $getHTTPCode);
-        }
-        return $curl_response;
+        $this->param[Constants::QUERY['INITIATOR']] = $initiator;
+        $this->param[Constants::QUERY['SEC_CRED']] = $securityCredential;
+        $this->param[Constants::QUERY['COMMAND_ID']] = $commandID;
+        $this->param[Constants::QUERY['TRANS_ID']] = $transactionID;
+        $this->param[Constants::QUERY['PARTY_A']] = $partyA;
+        $this->param[Constants::QUERY['ID_TYPE']] = $identifierType;
+        $this->param[Constants::QUERY['RESULT_URL']] = $resultURL;
+        $this->param[Constants::QUERY['TIME_OUT_URL']] = $queueTimeOutURL;
+        $this->param[Constants::QUERY['REMARKS']] = $remarks;
+        $this->param[Constants::QUERY['OCCASION']] = $occasion;
+        return $this->response = $this->curlRequest($this->url, $this->param, $this->token);
     }
 
     public static function stkPushQuery($environment, $checkoutRequestID, $businessShortCode, $password, $timestamp){
         $this->token = self::generateToken();
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type:application/json','Authorization:Bearer ' . $this->token));
-
-        $this->curlData[Constants::P_QUERY['SHORTCODE']] = $businessShortCode;
-        $this->curlData[Constants::P_QUERY['PASSWORD']] = $password;
-        $this->curlData[Constants::P_QUERY['TIMESTAMP']] = $timestamp;
-        $this->curlData[Constants::P_QUERY['CHECKOUT_RID']] = $checkoutRequestID;
-
-        $this->data = json_encode($this->curlData);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_POST, true);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $this->data);
-        curl_setopt($curl, CURLOPT_HEADER, false);
-        $curl_response = curl_exec($curl);
-        $getHTTPCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($curl);
-        curl_close($curl);
-        if ($curl_response === false) {
-            throw new MpesaException('Unable to connect to Safaricom Mpesa API: ' . $curlError);
-        } elseif ($getHTTPCode != 200) {
-            throw new MpesaException('Bad response from Safaricom Daraja Mpesa API: HTTP code ' . $getHTTPCode);
+        if($this->appStatus == 'live'){
+            $this->url = Constants::MPESA['STKQUERY_API_URL'];
+        }elseif($this->appStatus == 'sandbox'){
+            $this->url = Constants::MPESA['STKQUERY_SANDBOX_URL'];
+        } else{
+            throw new MpesaException("Invalid application status");
         }
-        return $curl_response;
+
+        $this->param[Constants::P_QUERY['SHORTCODE']] = $businessShortCode;
+        $this->param[Constants::P_QUERY['PASSWORD']] = $password;
+        $this->param[Constants::P_QUERY['TIMESTAMP']] = $timestamp;
+        $this->param[Constants::P_QUERY['CHECKOUT_RID']] = $checkoutRequestID;
+        return $this->response = $this->curlRequest($this->url, $this->param, $this->token);
     }
 
     public function completeTransaction($status = true)
     {
         if ($status === true) {
-            $this->curlData[Constants::COMPLETE['RESULT_DESC']] = "Confirmation Service request accepted successfully";
-            $this->curlData[Constants::COMPLETE['RESULT_CODE']] = "0";
+            $this->param[Constants::COMPLETE['RESULT_DESC']] = "Confirmation Service request accepted successfully";
+            $this->param[Constants::COMPLETE['RESULT_CODE']] = "0";
         } else {
-            $this->curlData[Constants::COMPLETE['RESULT_DESC']] = "Confirmation Service not accepted";
-            $this->curlData[Constants::COMPLETE['RESULT_CODE']] = "1";
+            $this->param[Constants::COMPLETE['RESULT_DESC']] = "Confirmation Service not accepted";
+            $this->param[Constants::COMPLETE['RESULT_CODE']] = "1";
         }
         header('Content-Type: application/json');
-        echo json_encode($this->curlData);
+        echo json_encode($this->param);
+    }
+
+    private function curlRequest($url, $param, $token)
+    {
+        $data = json_encode($param);
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_URL, $url);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, [
+            'Content-Type:application/json', 
+            'Authorization:Bearer ' . $token
+        ]);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_POST, true);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($curl, CURLOPT_HEADER, false);
+
+        $curl_response = curl_exec($curl);
+        $getHTTPCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($curl);
+        curl_close($curl);
+        if ($curl_response === false) {
+            throw new MpesaException('Unable to connect to Safaricom Mpesa API: ' . $curlError);
+        } elseif ($getHTTPCode != 200) {
+            $error = json_decode($curl_response, true);
+            throw new MpesaException('Bad request from Safaricom Daraja Mpesa API: HTTP code ' . $getHTTPCode ." (". $error['errorMessage'] . ")");
+        }
+        return $curl_response;
     }
 }
