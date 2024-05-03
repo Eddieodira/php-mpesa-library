@@ -13,9 +13,17 @@ class Constants
         'C2B_SANDBOX_URL' => 'https://sandbox.safaricom.co.ke/mpesa/c2b/v1/simulate',
         'C2B_API_URL' => 'https://api.safaricom.co.ke/mpesa/c2b/v1/simulate',
 
+        //REVERSAL ENDPONTS
+        'REVERSE_SANDBOX_URL' => 'https://sandbox.safaricom.co.ke/mpesa/reversal/v1/request',
+        'REVERSE_API_URL' => 'https://api.safaricom.co.ke/mpesa/reversal/v1/request',
+
         //STKPUSH ENDPONTS
         'STKPUSH_SANDBOX_URL' => 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
         'STKPUSH_API_URL' => 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
+
+        //STKPUSH QUERY ENDPONTS
+        'STKQUERY_SANDBOX_URL' => 'https://sandbox.safaricom.co.ke/mpesa/stkpushquery/v1/query',
+        'STKQUERY_API_URL' => 'https://api.safaricom.co.ke/mpesa/stkpushquery/v1/query',
 
         //TRANSACTION STATUS QUERY ENDPONTS
         'QUERY_SANDBOX_URL' => 'https://sandbox.safaricom.co.ke/mpesa/transactionstatus/v1/query',
@@ -42,6 +50,20 @@ class Constants
         'CALLBACK_URL' => 'CallBackURL',
         'ACCOUNT_REF' => 'AccountReference',
         'TRANS_DESC' => 'TransactionDesc'
+    ];
+
+    const REV = [
+        'COMMAND_ID' => 'CommandID',
+        'INITIATOR' => 'Initiator',
+        'SEC_CRED' => 'SecurityCredential',
+        'TRANS_ID' => 'TransactionID',
+        'AMOUNT' => 'Amount',
+        'RECEIVER' => 'ReceiverParty',
+        'RITYPE' => 'RecieverIdentifierType',
+        'RESULT_URL' => 'ResultURL',
+        'QTOUT_URL' => 'QueueTimeOutURL',
+        'REMARKS' => 'Remarks',
+        'OCCASION' => 'Occasion'
     ];
 
     const QUERY = [
@@ -73,3 +95,4 @@ class Constants
         'PHONE_NUMBER' => '/(\+254|254)([7][0-9]|[1][0-1]){1}[0-9]{1}[0-9]{6}/',
     ];
 }
+
